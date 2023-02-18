@@ -16,18 +16,27 @@ using namespace vex;
 competition Competition;
 
 // Global variables
-const float flywheelUpperPercent = 0.97; // FAST FLYWHEEL PERCENT SPEED
-const float flywheelLowerPercent = 0.78; // SLOW FLYWHEEL PERCENT SPEED
+const float flywheelUpperPercent = 0.97;
+const float flywheelLowerPercent = 0.75;
 float flywheelPercent = flywheelLowerPercent;
+
 bool indexerCycling = false;
 int shootCount = 0;
 
+bool pneumaticsYPressed = false;
+bool pneumaticsRightPressed = false;
+
+// Function prototypes
 void chassis(double forwardScale = 1.0, double turnScale = 1.0,
              double strafeScale = 1.0, int deadZone = 18);
+
 void oneIndexerCycle();
 void oneFastIndexerCycle();
 void toggleFlywheelSpeed();
+
 void togglePneumatics();
+void togglePneumaticsY();
+void togglePneumaticsRight();
 
 void resetDriveEncoders();
 double avgDriveEncoderValue();
@@ -84,11 +93,11 @@ void autonomous(void) {
     Pneumatics.close();
   }
 
-  Flywheel.spin(fwd, 10.5, volt);
+  Flywheel.spin(fwd, 11, volt);
 
   strafe(-680, 600);
 
-  Intakes.spin(fwd, -408, rpm);
+  Intakes.spin(fwd, -400, rpm);
 
   move(170, 300);
 
@@ -100,24 +109,19 @@ void autonomous(void) {
 
   rotateTo(18, 60, 30);
   
-  Indexer.resetPosition();
   shoot(1, true);
 
   rotateTo(135, 60);
 
-  Flywheel.spin(fwd, 10.3, volt);
-
   Intakes.spin(fwd, 390, rpm);
+
+  Flywheel.spin(fwd, 10.1, volt);
 
   move(1400, 600, false);
 
-  rotateTo(48, 60, 30);
-
-  Flywheel.spin(fwd, 9.8, volt);
-  shoot(1, true);
-  Flywheel.spin(fwd, 10, volt);
-  wait(0.75, sec);
-  shoot(2);
+  rotateTo(45.5, 60, 30);
+  
+  shoot(3);
 
   Controller.Screen.clearScreen();
   Controller.Screen.setCursor(1, 0);
@@ -132,15 +136,20 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
-  Controller.Screen.clearScreen();
-
   if (Pneumatics.value() == 1) {
     Pneumatics.close();
   }
 
+  Controller.Screen.clearScreen();
+
   Controller.ButtonR2.pressed(oneIndexerCycle);
   Controller.ButtonX.pressed(oneFastIndexerCycle);
-  Controller.ButtonY.pressed(togglePneumatics);
+ 
+  Controller.ButtonY.pressed(togglePneumaticsY);
+  Controller.ButtonRight.pressed(togglePneumaticsRight);
+  Controller.ButtonY.released(togglePneumaticsY);
+  Controller.ButtonRight.released(togglePneumaticsRight);
+
   Controller.ButtonLeft.pressed(toggleFlywheelSpeed);
 
   while (true) {
@@ -405,27 +414,43 @@ void toggleFlywheelSpeed() {
 }
 
 void togglePneumatics() {
-  Controller.Screen.clearLine(2);
-  Controller.Screen.setCursor(2, 0);
-  wait(50, msec);
+  if (pneumaticsYPressed && pneumaticsRightPressed) {
+    Controller.Screen.clearLine(2);
+    Controller.Screen.setCursor(2, 0);
+    wait(50, msec);
 
-  if (Pneumatics.value() == 0) {
-    FrontRight.stop(hold);
-    FrontLeft.stop(hold);
-    BackLeft.stop(hold);
-    BackRight.stop(hold);
-    Pneumatics.open();
-    Controller.Screen.print("Pneumatics Open");
-  } else {
-    Pneumatics.close();
-    Controller.Screen.print("Pneumatics Closed");
+    if (Pneumatics.value() == 0) {
+      FrontRight.stop(hold);
+      FrontLeft.stop(hold);
+      BackLeft.stop(hold);
+      BackRight.stop(hold);
+      Pneumatics.open();
+      Controller.Screen.print("Pneumatics Open");
+    } else {
+      Pneumatics.close();
+      Controller.Screen.print("Pneumatics Closed");
+    }
+    
+    wait(50, msec);
   }
-  
-  wait(50, msec);
+}
+
+void togglePneumaticsY() {
+  pneumaticsYPressed = !pneumaticsYPressed;
+  togglePneumatics();
+}
+
+void togglePneumaticsRight() {
+  pneumaticsRightPressed = !pneumaticsRightPressed;
+  togglePneumatics();
 }
 
 void shoot(int count, bool skipWait) {
-  for(int i = 0; i < count; i++) {
+  if (shootCount == 0) {
+    Indexer.resetPosition();
+  }
+
+  for (int i = 0; i < count; i++) {
     shootCount ++;
     Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
     Indexer.stop(hold);

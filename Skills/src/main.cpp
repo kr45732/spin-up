@@ -16,18 +16,27 @@ using namespace vex;
 competition Competition;
 
 // Global variables
-const float flywheelUpperPercent = 0.97; // FAST FLYWHEEL PERCENT SPEED
-const float flywheelLowerPercent = 0.78; // SLOW FLYWHEEL PERCENT SPEED
+const float flywheelUpperPercent = 0.97;
+const float flywheelLowerPercent = 0.75;
 float flywheelPercent = flywheelLowerPercent;
+
 bool indexerCycling = false;
 int shootCount = 0;
 
+bool pneumaticsYPressed = false;
+bool pneumaticsRightPressed = false;
+
+// Function prototypes
 void chassis(double forwardScale = 1.0, double turnScale = 1.0,
              double strafeScale = 1.0, int deadZone = 18);
+
 void oneIndexerCycle();
 void oneFastIndexerCycle();
 void toggleFlywheelSpeed();
+
 void togglePneumatics();
+void togglePneumaticsY();
+void togglePneumaticsRight();
 
 void resetDriveEncoders();
 double avgDriveEncoderValue();
@@ -88,7 +97,7 @@ void autonomous(void) {
 
   strafe(-680, 600);
 
-  Intakes.spin(fwd, -420, rpm);
+  Intakes.spin(fwd, -425, rpm);
 
   move(170, 300);
 
@@ -103,7 +112,6 @@ void autonomous(void) {
   rotateTo(20, 60, 30);
   
   // 1st attempt
-  Indexer.resetPosition();
   shoot(2);
 
   rotateTo(135, 60);
@@ -142,9 +150,9 @@ void autonomous(void) {
 
   strafe(-800, 600);
 
-  move(630, 300);
+  move(660, 300);
 
-  move(-100, 600);
+  move(-130, 600);
 
   strafe(-300, 600);
 
@@ -152,15 +160,15 @@ void autonomous(void) {
 
   rotateTo(90, 60);
 
-  move(150, 300);
+  move(170, 300);
 
-  move(-500, 600);
+  move(-520, 600);
 
-  rotateTo(315, 60);
+  rotateTo(313, 60, 40);
 
   Intakes.spin(fwd, 390, rpm);
 
-  Flywheel.spin(fwd, 8.7, volt);
+  Flywheel.spin(fwd, 9, volt);
 
   move(1600, 800);
 
@@ -169,17 +177,21 @@ void autonomous(void) {
   // 4th attempt
   shoot(3);
 
+  rotateTo(225, 60);
+
   strafe(800, 600);
 
   rotateTo(270, 60);
+
+  Intakes.spin(fwd, 420, rpm);
 
   move(600, 300);
 
   strafe(300, 600);
 
-  move(400, 300);
+  move(350, 300);
 
-  move(-600, 300);
+  move(-450, 300);
 
   rotateTo(315, 60);
 
@@ -198,15 +210,20 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
-  Controller.Screen.clearScreen();
-
   if (Pneumatics.value() == 1) {
     Pneumatics.close();
   }
 
+  Controller.Screen.clearScreen();
+
   Controller.ButtonR2.pressed(oneIndexerCycle);
   Controller.ButtonX.pressed(oneFastIndexerCycle);
-  Controller.ButtonY.pressed(togglePneumatics);
+ 
+  Controller.ButtonY.pressed(togglePneumaticsY);
+  Controller.ButtonRight.pressed(togglePneumaticsRight);
+  Controller.ButtonY.released(togglePneumaticsY);
+  Controller.ButtonRight.released(togglePneumaticsRight);
+
   Controller.ButtonLeft.pressed(toggleFlywheelSpeed);
 
   while (true) {
@@ -471,27 +488,43 @@ void toggleFlywheelSpeed() {
 }
 
 void togglePneumatics() {
-  Controller.Screen.clearLine(2);
-  Controller.Screen.setCursor(2, 0);
-  wait(50, msec);
+  if (pneumaticsYPressed && pneumaticsRightPressed) {
+    Controller.Screen.clearLine(2);
+    Controller.Screen.setCursor(2, 0);
+    wait(50, msec);
 
-  if (Pneumatics.value() == 0) {
-    FrontRight.stop(hold);
-    FrontLeft.stop(hold);
-    BackLeft.stop(hold);
-    BackRight.stop(hold);
-    Pneumatics.open();
-    Controller.Screen.print("Pneumatics Open");
-  } else {
-    Pneumatics.close();
-    Controller.Screen.print("Pneumatics Closed");
+    if (Pneumatics.value() == 0) {
+      FrontRight.stop(hold);
+      FrontLeft.stop(hold);
+      BackLeft.stop(hold);
+      BackRight.stop(hold);
+      Pneumatics.open();
+      Controller.Screen.print("Pneumatics Open");
+    } else {
+      Pneumatics.close();
+      Controller.Screen.print("Pneumatics Closed");
+    }
+    
+    wait(50, msec);
   }
-  
-  wait(50, msec);
+}
+
+void togglePneumaticsY() {
+  pneumaticsYPressed = !pneumaticsYPressed;
+  togglePneumatics();
+}
+
+void togglePneumaticsRight() {
+  pneumaticsRightPressed = !pneumaticsRightPressed;
+  togglePneumatics();
 }
 
 void shoot(int count, bool skipWait) {
-  for(int i = 0; i < count; i++) {
+  if (shootCount == 0) {
+    Indexer.resetPosition();
+  }
+
+  for (int i = 0; i < count; i++) {
     shootCount ++;
     Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
     Indexer.stop(hold);
