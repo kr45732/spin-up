@@ -62,9 +62,7 @@ void pre_auton(void) {
   // Initializing Robot Configuration
   vexcodeInit();
 
-  if (Pneumatics.value() == 1) {
-    Pneumatics.close();
-  }
+  Pneumatics.close();
 
   InertialSensor.calibrate();
   while (InertialSensor.isCalibrating()) {
@@ -89,9 +87,7 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
-  if (Pneumatics.value() == 1) {
-    Pneumatics.close();
-  }
+  Pneumatics.close();
 
   Intakes.spin(fwd, -420, rpm);
 
@@ -120,9 +116,7 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
-  if (Pneumatics.value() == 1) {
-    Pneumatics.close();
-  }
+  Pneumatics.close();
 
   Controller.Screen.clearScreen();
 

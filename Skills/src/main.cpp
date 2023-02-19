@@ -62,9 +62,7 @@ void pre_auton(void) {
   // Initializing Robot Configuration
   vexcodeInit();
 
-  if (Pneumatics.value() == 1) {
-    Pneumatics.close();
-  }
+  Pneumatics.close();
 
   InertialSensor.calibrate();
   while (InertialSensor.isCalibrating()) {
@@ -89,15 +87,13 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
-  if (Pneumatics.value() == 1) {
-    Pneumatics.close();
-  }
+  Pneumatics.close();
 
   Flywheel.spin(fwd, 10.8, volt);
 
   strafe(-680, 600);
 
-  Intakes.spin(fwd, -425, rpm);
+  Intakes.spin(fwd, -435, rpm);
 
   move(170, 300);
 
@@ -150,9 +146,9 @@ void autonomous(void) {
 
   strafe(-800, 600);
 
-  move(660, 300);
+  move(700, 300);
 
-  move(-130, 600);
+  move(-170, 600);
 
   strafe(-300, 600);
 
@@ -183,7 +179,7 @@ void autonomous(void) {
 
   rotateTo(270, 60);
 
-  Intakes.spin(fwd, 420, rpm);
+  Intakes.spin(fwd, 425, rpm);
 
   move(600, 300);
 
@@ -194,6 +190,8 @@ void autonomous(void) {
   move(-450, 300);
 
   rotateTo(315, 60);
+
+  move(100, 600);
 
   Pneumatics.open();
 
@@ -210,9 +208,7 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
-  if (Pneumatics.value() == 1) {
-    Pneumatics.close();
-  }
+  Pneumatics.close();
 
   Controller.Screen.clearScreen();
 
