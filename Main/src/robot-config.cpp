@@ -30,7 +30,6 @@ motor FlywheelOne = motor(PORT10, ratio6_1, true);
 motor FlywheelTwo = motor(PORT5, ratio6_1, false);
 motor_group Flywheel = motor_group(FlywheelOne, FlywheelTwo);
 
-
 inertial InertialSensor = inertial(PORT1);
 
 pneumatics Pneumatics = pneumatics(Brain.ThreeWirePort.G);

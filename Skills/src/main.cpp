@@ -26,12 +26,14 @@ int shootCount = 0;
 bool pneumaticsYPressed = false;
 bool pneumaticsRightPressed = false;
 
+bool isAsyncShoot = false;
+
 // Function prototypes
 void chassis(double forwardScale = 1.0, double turnScale = 1.0,
              double strafeScale = 1.0, int deadZone = 18);
 
 void oneIndexerCycle();
-void oneFastIndexerCycle();
+void tripleShotCycle();
 void toggleFlywheelSpeed();
 
 void togglePneumatics();
@@ -46,7 +48,8 @@ void strafe(int degrees, int degreesPerSecond);
 void rotateTo(double degrees, double speed, int differenceThreshold = 20);
 void moveForward(int left, int right);
 void moveStrafe(int left, int right);
-void shoot(int count = 1, bool skipWait = false);
+void shoot(int count = 1, bool skipWait = false, double waitSec = 0.75);
+int asyncShoot();
 
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
@@ -89,115 +92,76 @@ void pre_auton(void) {
 void autonomous(void) {
   Pneumatics.close();
 
-  Flywheel.spin(fwd, 10.8, volt);
+  Flywheel.spin(fwd, 8.6, volt);
 
-  strafe(-680, 600);
+  wait(1.5, sec);
 
-  Intakes.spin(fwd, -435, rpm);
+  shoot(10, false, 1.5);
 
-  move(170, 300);
+  Flywheel.stop();
 
-  move(-100, 600);
+  strafe(-100, 1200);
 
-  Intakes.stop();
+  InertialSensor.resetHeading();
+  InertialSensor.resetRotation();
+  wait(20, msec);
 
-  rotateTo(0, 60);
+  strafe(450, 720);
 
-  strafe(250, 600);
+  isAsyncShoot = true;
+  task t1(asyncShoot);
 
-  rotateTo(20, 60, 30);
-  
-  // 1st attempt
-  shoot(2);
+  Intakes.spin(fwd, 500, rpm);
 
-  rotateTo(135, 60);
-
-  Flywheel.spin(fwd, 8.8, volt);
-
-  Intakes.spin(fwd, 390, rpm);
-
-  move(1550, 500);
-
-  wait(1, sec);
-
-  rotateTo(227, 60);
-
-  // 2nd attempt
-  shoot(3);
-
-  rotateTo(225, 60);
-
-  move(840, 600);
-
-  rotateTo(135, 60);
-
-  Flywheel.spin(fwd, 8.9, volt);
-
-  move(900, 500);
-
-  rotateTo(79, 60);
-
-  // 3rd attempt
-  shoot(3);
-
-  Intakes.spin(fwd, 390, rpm);
-
-  rotateTo(180, 60);
-
-  strafe(-800, 600);
-
-  move(700, 300);
-
-  move(-170, 600);
-
-  strafe(-300, 600);
-
-  move(-300, 600);
-
-  rotateTo(90, 60);
-
-  move(170, 300);
-
-  move(-520, 600);
-
-  rotateTo(313, 60, 40);
-
-  Intakes.spin(fwd, 390, rpm);
-
-  Flywheel.spin(fwd, 9, volt);
-
-  move(1600, 800);
-
-  rotateTo(234, 60);
-
-  // 4th attempt
-  shoot(3);
-
-  rotateTo(225, 60);
-
-  strafe(800, 600);
+  move(1580, 720);
+  move(-540, 720);
 
   rotateTo(270, 60);
 
-  Intakes.spin(fwd, 425, rpm);
+  move(480, 720);
+  wait(0.25, sec);
+  move(-220, 720);
 
-  move(600, 300);
+  Intakes.stop();
+  isAsyncShoot = false;
 
-  strafe(300, 600);
+  rotateTo(180, 60);
 
-  move(350, 300);
+  Flywheel.spin(fwd, 8.6, volt);
 
-  move(-450, 300);
+  move(1120, 720);
 
-  rotateTo(315, 60);
+  rotateTo(180, 60);
 
-  move(100, 600);
+  strafe(-3250, 1000);
+
+  rotateTo(173, 60);
+
+  shoot(8, false, 1.5);
+
+  rotateTo(180, 60);
+
+  isAsyncShoot = true;
+  task t2(asyncShoot);
+
+  strafe(380, 800);
+
+  Intakes.spin(fwd, 500, rpm);
+
+  move(1620, 800);
+
+  move(-500, 800);
+
+  rotateTo(90, 60);
+
+  move(480, 800);
+  move(-350, 800);
+
+  Intakes.stop();
+
+  rotateTo(140, 60);
 
   Pneumatics.open();
-
-  Controller.Screen.clearScreen();
-  Controller.Screen.setCursor(1, 0);
-  Controller.Screen.print("Auton complete");
 }
 
 /*---------------------------------------------------------------------------*/
@@ -212,8 +176,8 @@ void usercontrol(void) {
 
   Controller.Screen.clearScreen();
 
-  Controller.ButtonR2.pressed(oneIndexerCycle);
-  Controller.ButtonX.pressed(oneFastIndexerCycle);
+  Controller.ButtonUp.pressed(oneIndexerCycle);
+  Controller.ButtonR2.pressed(tripleShotCycle);
  
   Controller.ButtonY.pressed(togglePneumaticsY);
   Controller.ButtonRight.pressed(togglePneumaticsRight);
@@ -223,7 +187,7 @@ void usercontrol(void) {
   Controller.ButtonLeft.pressed(toggleFlywheelSpeed);
 
   while (true) {
-    chassis(1.7, 1.1, 1.7);
+    chassis(17, 1.1, 17);
 
     if (Controller.ButtonL1.pressing()) {
       Intakes.spin(fwd, 600, rpm);
@@ -452,17 +416,33 @@ void chassis(double forwardScale, double turnScale, double strafeScale,
 void oneIndexerCycle() {
   if (!indexerCycling) {
     indexerCycling = true;
-    Indexer.rotateFor(355, deg, 100, rpm);
+    Indexer.rotateFor(360, deg, 200, rpm);
     Indexer.stop(hold);
     indexerCycling = false;
   }
 }
 
-void oneFastIndexerCycle() {
+void tripleShotCycle() {
   if (!indexerCycling) {
     indexerCycling = true;
-    Indexer.rotateFor(355, deg, 200, rpm);
+
+    Indexer.rotateFor(360, deg, 200, rpm);
+    
+    Flywheel.spin(fwd, 12, volt);
     Indexer.stop(hold);
+    wait(0.1, sec);
+    Flywheel.spin(fwd, 9, volt);
+
+    Indexer.rotateFor(360, deg, 200, rpm);
+
+    Flywheel.spin(fwd, 12, volt);
+    Indexer.stop(hold);
+    wait(0.1, sec);
+    Flywheel.spin(fwd, 9, volt);
+    
+    Indexer.rotateFor(360, deg, 200, rpm);
+    Indexer.stop(hold);
+
     indexerCycling = false;
   }
 }
@@ -515,7 +495,7 @@ void togglePneumaticsRight() {
   togglePneumatics();
 }
 
-void shoot(int count, bool skipWait) {
+void shoot(int count, bool skipWait, double waitSec) {
   if (shootCount == 0) {
     Indexer.resetPosition();
   }
@@ -525,7 +505,15 @@ void shoot(int count, bool skipWait) {
     Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
     Indexer.stop(hold);
     if (!skipWait) {
-      wait(0.75, sec);
+      wait(waitSec, sec);
     }
   }
+}
+
+int asyncShoot() {
+  while (isAsyncShoot) {
+    shoot(1);
+    wait(20, msec);
+  }
+  return 0;
 }

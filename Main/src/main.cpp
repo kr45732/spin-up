@@ -26,12 +26,14 @@ int shootCount = 0;
 bool pneumaticsYPressed = false;
 bool pneumaticsRightPressed = false;
 
+bool isAsyncShoot = false;
+
 // Function prototypes
 void chassis(double forwardScale = 1.0, double turnScale = 1.0,
              double strafeScale = 1.0, int deadZone = 18);
 
 void oneIndexerCycle();
-void oneFastIndexerCycle();
+void tripleShotCycle();
 void toggleFlywheelSpeed();
 
 void togglePneumatics();
@@ -46,7 +48,8 @@ void strafe(int degrees, int degreesPerSecond);
 void rotateTo(double degrees, double speed, int differenceThreshold = 20);
 void moveForward(int left, int right);
 void moveStrafe(int left, int right);
-void shoot(int count = 1, bool skipWait = false);
+void shoot(int count = 1, bool skipWait = false, double waitSec = 0.75);
+int asyncShoot();
 
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
@@ -136,8 +139,8 @@ void usercontrol(void) {
 
   Controller.Screen.clearScreen();
 
-  Controller.ButtonR2.pressed(oneIndexerCycle);
-  Controller.ButtonX.pressed(oneFastIndexerCycle);
+  Controller.ButtonUp.pressed(oneIndexerCycle);
+  Controller.ButtonR2.pressed(tripleShotCycle);
  
   Controller.ButtonY.pressed(togglePneumaticsY);
   Controller.ButtonRight.pressed(togglePneumaticsRight);
@@ -147,7 +150,7 @@ void usercontrol(void) {
   Controller.ButtonLeft.pressed(toggleFlywheelSpeed);
 
   while (true) {
-    chassis(1.7, 1.1, 1.7);
+    chassis(17, 1.1, 17);
 
     if (Controller.ButtonL1.pressing()) {
       Intakes.spin(fwd, 600, rpm);
@@ -376,17 +379,33 @@ void chassis(double forwardScale, double turnScale, double strafeScale,
 void oneIndexerCycle() {
   if (!indexerCycling) {
     indexerCycling = true;
-    Indexer.rotateFor(355, deg, 100, rpm);
+    Indexer.rotateFor(360, deg, 200, rpm);
     Indexer.stop(hold);
     indexerCycling = false;
   }
 }
 
-void oneFastIndexerCycle() {
+void tripleShotCycle() {
   if (!indexerCycling) {
     indexerCycling = true;
-    Indexer.rotateFor(355, deg, 200, rpm);
+
+    Indexer.rotateFor(360, deg, 200, rpm);
     Indexer.stop(hold);
+
+    Flywheel.spin(fwd, 12, volt);
+    wait(0.1, sec);
+    Flywheel.spin(fwd, 10, volt);
+
+    Indexer.rotateFor(360, deg, 200, rpm);
+    Indexer.stop(hold);
+
+    Flywheel.spin(fwd, 12, volt);
+    wait(0.1, sec);
+    Flywheel.spin(fwd, 10, volt);
+    
+    Indexer.rotateFor(360, deg, 200, rpm);
+    Indexer.stop(hold);
+
     indexerCycling = false;
   }
 }
@@ -439,7 +458,7 @@ void togglePneumaticsRight() {
   togglePneumatics();
 }
 
-void shoot(int count, bool skipWait) {
+void shoot(int count, bool skipWait, double waitSec) {
   if (shootCount == 0) {
     Indexer.resetPosition();
   }
@@ -449,7 +468,15 @@ void shoot(int count, bool skipWait) {
     Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
     Indexer.stop(hold);
     if (!skipWait) {
-      wait(0.75, sec);
+      wait(waitSec, sec);
     }
   }
+}
+
+int asyncShoot() {
+  while (isAsyncShoot) {
+    shoot(1);
+    wait(20, msec);
+  }
+  return 0;
 }
