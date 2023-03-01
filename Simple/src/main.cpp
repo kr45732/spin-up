@@ -17,16 +17,16 @@ competition Competition;
 
 // Global variables
 const float flywheelUpperPercent = 0.97;
-const float flywheelLowerPercent = 0.75;
+const float flywheelLowerPercent = 0.78;
 float flywheelPercent = flywheelLowerPercent;
 
 bool indexerCycling = false;
 int shootCount = 0;
+bool shouldAsyncShoot = false;
+bool isTripleShot = false;
 
 bool pneumaticsYPressed = false;
 bool pneumaticsRightPressed = false;
-
-bool isAsyncShoot = false;
 
 // Function prototypes
 void chassis(double forwardScale = 1.0, double turnScale = 1.0,
@@ -119,13 +119,16 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
+  if (shootCount == 0) {
+    Indexer.resetPosition();
+  }
   Pneumatics.close();
 
   Controller.Screen.clearScreen();
 
   Controller.ButtonUp.pressed(oneIndexerCycle);
   Controller.ButtonR2.pressed(tripleShotCycle);
- 
+
   Controller.ButtonY.pressed(togglePneumaticsY);
   Controller.ButtonRight.pressed(togglePneumaticsRight);
   Controller.ButtonY.released(togglePneumaticsY);
@@ -134,7 +137,7 @@ void usercontrol(void) {
   Controller.ButtonLeft.pressed(toggleFlywheelSpeed);
 
   while (true) {
-    chassis(17, 1.1, 17);
+    chassis(1.7, 1.1, 1.7);
 
     if (Controller.ButtonL1.pressing()) {
       Intakes.spin(fwd, 600, rpm);
@@ -144,12 +147,14 @@ void usercontrol(void) {
       Intakes.stop();
     }
 
-    if (Controller.ButtonR1.pressing()) {
-      Flywheel.spin(fwd, 12 * flywheelPercent, voltageUnits::volt);
-    } else if (Controller.ButtonDown.pressing()) {
-      Flywheel.spin(fwd, -12 * flywheelPercent, voltageUnits::volt);
-    } else {
-      Flywheel.stop(coast);
+    if (!isTripleShot) {
+      if (Controller.ButtonR1.pressing()) {
+        Flywheel.spin(fwd, 12 * flywheelPercent, voltageUnits::volt);
+      } else if (Controller.ButtonDown.pressing()) {
+        Flywheel.spin(fwd, -12 * flywheelPercent, voltageUnits::volt);
+      } else {
+        Flywheel.stop(coast);
+      }
     }
 
     // Sleep for a short amount of time to prevent wasted resources
@@ -185,8 +190,9 @@ void move(int degrees, int degreesPerSecond, bool hold) {
   InertialSensor.resetRotation();
 
   if (hold) {
-    moveForward(degreesPerSecond * direction * 0.5 - InertialSensor.rotation() * 10,
-                degreesPerSecond * direction * 0.5 + InertialSensor.rotation() * 10);
+    moveForward(
+        degreesPerSecond * direction * 0.5 - InertialSensor.rotation() * 10,
+        degreesPerSecond * direction * 0.5 + InertialSensor.rotation() * 10);
 
     wait(0.3, sec);
   }
@@ -214,8 +220,8 @@ void strafe(int degrees, int degreesPerSecond) {
   resetDriveEncoders();
   InertialSensor.resetRotation();
 
-  moveStrafe(degreesPerSecond * direction * 0.5  - InertialSensor.rotation(),
-               degreesPerSecond * direction * 0.5 + InertialSensor.rotation());
+  moveStrafe(degreesPerSecond * direction * 0.5 - InertialSensor.rotation(),
+             degreesPerSecond * direction * 0.5 + InertialSensor.rotation());
   wait(0.3, sec);
 
   while (avgDriveEncoderValue() < abs(degrees)) {
@@ -259,7 +265,7 @@ void rotateTo(double degrees, double speed, int differenceThreshold) {
     BackLeft.spin(forward, speed, pct);
     BackRight.spin(reverse, speed, pct);
 
-    while (difference > differenceThreshold) {  
+    while (difference > differenceThreshold) {
       if (InertialSensor.heading() < degrees) {
         if (turnLeft) {
           difference = 360 + InertialSensor.heading() - degrees;
@@ -284,9 +290,11 @@ void rotateTo(double degrees, double speed, int differenceThreshold) {
 
   int overshootError = 3;
   if (turnLeft) {
-    waitUntil(degrees + overshootError >= InertialSensor.heading() && InertialSensor.heading() >= degrees);
+    waitUntil(degrees + overshootError >= InertialSensor.heading() &&
+              InertialSensor.heading() >= degrees);
   } else {
-    waitUntil(degrees + overshootError >= InertialSensor.heading() && InertialSensor.heading() >= (degrees));
+    waitUntil(degrees + overshootError >= InertialSensor.heading() &&
+              InertialSensor.heading() >= (degrees));
   }
 
   FrontLeft.stop();
@@ -363,7 +371,8 @@ void chassis(double forwardScale, double turnScale, double strafeScale,
 void oneIndexerCycle() {
   if (!indexerCycling) {
     indexerCycling = true;
-    Indexer.rotateFor(360, deg, 200, rpm);
+    shootCount++;
+    Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
     Indexer.stop(hold);
     indexerCycling = false;
   }
@@ -371,26 +380,28 @@ void oneIndexerCycle() {
 
 void tripleShotCycle() {
   if (!indexerCycling) {
-    indexerCycling = true;
+    indexerCycling = isTripleShot = true;
 
-    Indexer.rotateFor(360, deg, 200, rpm);
-    
-    Flywheel.spin(fwd, 12, volt);
+    shootCount++;
+    Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
+
+    Flywheel.spin(fwd, 13, volt);
     Indexer.stop(hold);
     wait(0.1, sec);
-    Flywheel.spin(fwd, 9, volt);
+    Flywheel.spin(fwd, 10, volt);
+    shootCount++;
+    Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
 
-    Indexer.rotateFor(360, deg, 200, rpm);
-
-    Flywheel.spin(fwd, 12, volt);
+    Flywheel.spin(fwd, 13, volt);
     Indexer.stop(hold);
     wait(0.1, sec);
-    Flywheel.spin(fwd, 9, volt);
-    
-    Indexer.rotateFor(360, deg, 200, rpm);
+    Flywheel.spin(fwd, 10, volt);
+    shootCount++;
+    Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
+
     Indexer.stop(hold);
 
-    indexerCycling = false;
+    indexerCycling = isTripleShot = false;
   }
 }
 
@@ -427,7 +438,7 @@ void togglePneumatics() {
       Pneumatics.close();
       Controller.Screen.print("Pneumatics Closed");
     }
-    
+
     wait(50, msec);
   }
 }
@@ -448,7 +459,7 @@ void shoot(int count, bool skipWait, double waitSec) {
   }
 
   for (int i = 0; i < count; i++) {
-    shootCount ++;
+    shootCount++;
     Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
     Indexer.stop(hold);
     if (!skipWait) {
@@ -458,7 +469,7 @@ void shoot(int count, bool skipWait, double waitSec) {
 }
 
 int asyncShoot() {
-  while (isAsyncShoot) {
+  while (shouldAsyncShoot) {
     shoot(1);
     wait(20, msec);
   }
