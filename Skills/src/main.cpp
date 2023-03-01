@@ -179,10 +179,10 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
+  Pneumatics.close();
   if (shootCount == 0) {
     Indexer.resetPosition();
   }
-  Pneumatics.close();
 
   Controller.Screen.clearScreen();
 
@@ -392,6 +392,31 @@ void moveStrafe(int left, int right) {
   BackRight.spin(fwd, right, dps);
 } // Strafe chassis right or left
 
+
+
+void shoot(int count, bool skipWait, double waitSec) {
+  if (shootCount == 0) {
+    Indexer.resetPosition();
+  }
+
+  for (int i = 0; i < count; i++) {
+    shootCount++;
+    Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
+    Indexer.stop(hold);
+    if (!skipWait) {
+      wait(waitSec, sec);
+    }
+  }
+}
+
+int asyncShoot() {
+  while (shouldAsyncShoot) {
+    shoot(1);
+    wait(20, msec);
+  }
+  return 0;
+}
+
 /* --- Driver period functions --- */
 void chassis(double forwardScale, double turnScale, double strafeScale,
              int deadZone) {
@@ -511,27 +536,4 @@ void togglePneumaticsY() {
 void togglePneumaticsRight() {
   pneumaticsRightPressed = !pneumaticsRightPressed;
   togglePneumatics();
-}
-
-void shoot(int count, bool skipWait, double waitSec) {
-  if (shootCount == 0) {
-    Indexer.resetPosition();
-  }
-
-  for (int i = 0; i < count; i++) {
-    shootCount++;
-    Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
-    Indexer.stop(hold);
-    if (!skipWait) {
-      wait(waitSec, sec);
-    }
-  }
-}
-
-int asyncShoot() {
-  while (shouldAsyncShoot) {
-    shoot(1);
-    wait(20, msec);
-  }
-  return 0;
 }

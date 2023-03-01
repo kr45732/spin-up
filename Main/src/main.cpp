@@ -96,30 +96,30 @@ void autonomous(void) {
 
   strafe(-680, 600);
 
+  // Roller
   Intakes.spin(fwd, -375, rpm);
-
   move(170, 300);
-
   move(-100, 600);
-
   Intakes.stop();
 
   strafe(250, 600);
 
   rotateTo(18, 60, 30);
 
+  // Preload disc
   shoot(1, true);
 
   rotateTo(135, 60);
 
   Intakes.spin(fwd, 390, rpm);
-
   Flywheel.spin(fwd, 10.1, volt);
 
+  // Intake line of three
   move(1400, 600); //, false
 
   rotateTo(45.5, 60, 30);
 
+  // Shoot 3 from center
   shoot(3);
 }
 
@@ -131,10 +131,10 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
+  Pneumatics.close();
   if (shootCount == 0) {
     Indexer.resetPosition();
   }
-  Pneumatics.close();
 
   Controller.Screen.clearScreen();
 
@@ -344,6 +344,29 @@ void moveStrafe(int left, int right) {
   BackRight.spin(fwd, right, dps);
 } // Strafe chassis right or left
 
+void shoot(int count, bool skipWait, double waitSec) {
+  if (shootCount == 0) {
+    Indexer.resetPosition();
+  }
+
+  for (int i = 0; i < count; i++) {
+    shootCount++;
+    Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
+    Indexer.stop(hold);
+    if (!skipWait) {
+      wait(waitSec, sec);
+    }
+  }
+}
+
+int asyncShoot() {
+  while (shouldAsyncShoot) {
+    shoot(1);
+    wait(20, msec);
+  }
+  return 0;
+}
+
 /* --- Driver period functions --- */
 void chassis(double forwardScale, double turnScale, double strafeScale,
              int deadZone) {
@@ -463,27 +486,4 @@ void togglePneumaticsY() {
 void togglePneumaticsRight() {
   pneumaticsRightPressed = !pneumaticsRightPressed;
   togglePneumatics();
-}
-
-void shoot(int count, bool skipWait, double waitSec) {
-  if (shootCount == 0) {
-    Indexer.resetPosition();
-  }
-
-  for (int i = 0; i < count; i++) {
-    shootCount++;
-    Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
-    Indexer.stop(hold);
-    if (!skipWait) {
-      wait(waitSec, sec);
-    }
-  }
-}
-
-int asyncShoot() {
-  while (shouldAsyncShoot) {
-    shoot(1);
-    wait(20, msec);
-  }
-  return 0;
 }
