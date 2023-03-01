@@ -16,7 +16,8 @@ using namespace vex;
 competition Competition;
 
 // Global variables
-const float flywheelUpperPercent = 0.78; // Speed for normal (single & close) shooting
+const float flywheelUpperPercent =
+    0.78; // Speed for normal (single & close) shooting
 const float flywheelLowerPercent = 0.72; // Speed for side load
 float flywheelPercent = flywheelLowerPercent;
 
@@ -391,8 +392,6 @@ void moveStrafe(int left, int right) {
   BackLeft.spin(fwd, -right, dps);
   BackRight.spin(fwd, right, dps);
 } // Strafe chassis right or left
-
-
 
 void shoot(int count, bool skipWait, double waitSec) {
   if (shootCount == 0) {

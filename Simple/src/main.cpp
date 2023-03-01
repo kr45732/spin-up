@@ -328,8 +328,6 @@ void moveStrafe(int left, int right) {
   BackRight.spin(fwd, right, dps);
 } // Strafe chassis right or left
 
-
-
 void shoot(int count, bool skipWait, double waitSec) {
   if (shootCount == 0) {
     Indexer.resetPosition();
