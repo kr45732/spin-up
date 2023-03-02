@@ -90,6 +90,31 @@ void pre_auton(void) {
 /*  a VEX Competition.                                                       */
 /*---------------------------------------------------------------------------*/
 
+void strafe1(int degrees, int degreesPerSecond) {
+  // positive degrees = strafe right
+  // negative degrees = strafe left
+  int direction = abs(degrees) / degrees;
+
+  resetDriveEncoders();
+  InertialSensor.resetRotation();
+
+  moveStrafe(degreesPerSecond * direction * 0.5 - InertialSensor.rotation(),
+             degreesPerSecond * direction * 0.5 + InertialSensor.rotation());
+  wait(0.3, sec);
+
+  while (avgDriveEncoderValue() < abs(degrees)) {
+    moveStrafe(degreesPerSecond * direction - 15 * InertialSensor.rotation(),
+               degreesPerSecond * direction + 15 * InertialSensor.rotation());
+    wait(20, msec);
+  }
+
+  moveStrafe(-600 * direction, -600 * direction);
+  wait(125, msec);
+
+  moveStrafe(0, 0);
+  wait(20, msec);
+} // Strafe using internal motor encoders
+
 void autonomous(void) {
   Pneumatics.close();
 
@@ -134,7 +159,7 @@ void autonomous(void) {
 
   Flywheel.spin(fwd, 8.6, volt);
 
-  move(1120, 720);
+  move(1145, 720);
 
   rotateTo(180, 60);
 
@@ -157,7 +182,7 @@ void autonomous(void) {
 
   // Roller 3
   move(1620, 800);
-  move(-500, 800);
+  move(-400, 800);
 
   rotateTo(90, 60);
 
