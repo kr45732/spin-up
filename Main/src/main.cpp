@@ -92,12 +92,12 @@ void pre_auton(void) {
 void autonomous(void) {
   Pneumatics.close();
 
-  Flywheel.spin(fwd, 11, volt);
+  Flywheel.spin(fwd, 11.3, volt);
 
   strafe(-680, 600);
 
   // Roller
-  Intakes.spin(fwd, -375, rpm);
+  Intakes.spin(fwd, -360, rpm);
   move(170, 300);
   move(-100, 600);
   Intakes.stop();
@@ -420,17 +420,17 @@ void tripleShotCycle() {
     shootCount++;
     Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
 
-    Flywheel.spin(fwd, 13, volt);
+    Flywheel.spin(fwd, 12, volt);
     Indexer.stop(hold);
     wait(0.1, sec);
-    Flywheel.spin(fwd, 10, volt);
+    Flywheel.spin(fwd, 9.5, volt);
     shootCount++;
     Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
 
-    Flywheel.spin(fwd, 13, volt);
+    Flywheel.spin(fwd, 12, volt);
     Indexer.stop(hold);
     wait(0.1, sec);
-    Flywheel.spin(fwd, 10, volt);
+    Flywheel.spin(fwd, 9.5, volt);
     shootCount++;
     Indexer.rotateTo(360 * shootCount, deg, 200, rpm);
 

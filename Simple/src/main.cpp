@@ -93,7 +93,7 @@ void autonomous(void) {
   Pneumatics.close();
 
   Intakes.spin(fwd, -420, rpm);
-  Flywheel.spin(fwd, 10.9, volt);
+  Flywheel.spin(fwd, 11.4, volt);
 
   // Roller
   move(70, 300);

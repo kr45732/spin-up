@@ -139,7 +139,7 @@ void autonomous(void) {
   shouldAsyncShoot = true;
   task t1(asyncShoot);
 
-  Intakes.spin(fwd, 500, rpm);
+  Intakes.spin(fwd, 400, rpm);
 
   // Roller 1
   move(1580, 720);
@@ -149,7 +149,6 @@ void autonomous(void) {
 
   // Roller 2
   move(480, 720);
-  wait(0.25, sec);
   move(-220, 720);
 
   Intakes.stop();
@@ -159,7 +158,7 @@ void autonomous(void) {
 
   Flywheel.spin(fwd, 8.6, volt);
 
-  move(1145, 720);
+  move(1250, 720);
 
   rotateTo(180, 60);
 
@@ -178,7 +177,7 @@ void autonomous(void) {
 
   strafe(380, 800);
 
-  Intakes.spin(fwd, 500, rpm);
+  Intakes.spin(fwd, 350, rpm);
 
   // Roller 3
   move(1620, 800);
